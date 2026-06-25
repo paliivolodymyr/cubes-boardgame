@@ -641,7 +641,40 @@
   // Реєстрація service worker для офлайн-роботи (працює лише на https / хостингу, не з file://)
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function () {});
+      navigator.serviceWorker.register("sw.js").then(function (reg) {
+
+        // Запитати користувача й оновитися, коли готовий новий SW.
+        function promptUpdate(worker) {
+          if (!worker) return;
+          if (confirm("Доступна нова версія застосунку. Оновити зараз?")) {
+            worker.postMessage({ type: "SKIP_WAITING" });
+          }
+        }
+
+        // Якщо новий SW уже чекає (напр. після перезавантаження) — пропонуємо одразу.
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          promptUpdate(reg.waiting);
+        }
+
+        // Стежимо за появою нового SW.
+        reg.addEventListener("updatefound", function () {
+          var nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener("statechange", function () {
+            if (nw.state === "installed" && navigator.serviceWorker.controller) {
+              promptUpdate(nw);
+            }
+          });
+        });
+      }).catch(function () {});
+
+      // Коли новий SW перебрав контроль — перезавантажуємо сторінку один раз.
+      var reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
     });
   }
 </script>
