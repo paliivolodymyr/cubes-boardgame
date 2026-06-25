@@ -5,7 +5,7 @@
    Кеш версіонований — змінюй VERSION при кожному релізі, щоб скинути старий кеш.
    Усі шляхи відносні, тож працює і в корені домену (Vercel), і в підпапці (GitHub Pages). */
 
-var VERSION = "1.0.1";
+var VERSION = "1.0.2";
 var CACHE = "kubiky-" + VERSION;
 var ASSETS = [
   "./",
