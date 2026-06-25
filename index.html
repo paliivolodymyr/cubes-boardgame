@@ -27,6 +27,7 @@
     background:linear-gradient(to bottom,var(--felt-top),var(--felt-bot));
     background-attachment:fixed;
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
   .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
   .app{min-height:100%;padding:24px 16px}
@@ -58,7 +59,7 @@
   .btn-danger:hover{background:#f43f5e}
   .btn-outline{background:var(--paper);color:#44403c;box-shadow:inset 0 0 0 1px var(--st300)}
   .btn-outline:hover{background:var(--st100)}
-  .pill{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--em900);color:var(--cream);font-size:14px;font-weight:500;padding:8px 12px;cursor:pointer;transition:.15s}
+  .pill{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--em900);color:var(--cream);font-size:14px;font-weight:500;padding:8px 12px;cursor:pointer;transition:.15s;white-space:nowrap}
   .pill:hover{background:var(--em800)}
   .pill:disabled{opacity:.4;cursor:not-allowed}
   .iconbtn{display:grid;place-items:center;width:36px;height:36px;border:none;border-radius:999px;background:var(--em900);color:var(--cream);font-size:18px;cursor:pointer;transition:.15s}
@@ -109,7 +110,7 @@
   .sheet td.cat .catlbl{display:flex;align-items:center;gap:8px;font-weight:500;color:var(--em950)}
   .sheet td.cat .combo{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .sheet td.cat .pts{font-family:var(--mono);font-size:12px;color:var(--st400)}
-  .section td{position:sticky;left:0;background:var(--em100);color:var(--em800);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px}
+  .section td{position:sticky;left:0;z-index:3;background:var(--em100);color:var(--em800);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px}
   .cellbtn{display:grid;place-items:center;margin:0 auto;width:28px;height:28px;border:1px solid var(--amber300);border-radius:8px;background:var(--amber100);color:#b45309;font-size:16px;cursor:pointer;transition:.15s}
   .cellbtn:hover{background:#fde68a}
   .cellbtn:active{transform:scale(.95)}
