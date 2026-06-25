@@ -200,12 +200,12 @@
     {key:"pair",label:"Пара",value:5},
     {key:"two_pairs",label:"Дві пари",value:10},
     {key:"triple",label:"Трикутник",value:15},
-    {key:"small_straight",label:"Малий стріт",value:20},
-    {key:"big_straight",label:"Великий стріт",value:30},
+    {key:"small_straight",label:"Малий ряд",value:20},
+    {key:"big_straight",label:"Великий ряд",value:30},
     {key:"full_house",label:"Фулхаус",value:35},
     {key:"care",label:"Каре",value:40},
     {key:"poker",label:"Покер",value:50},
-    {key:"chance",label:"Шанс",value:null}
+    {key:"chance",label:"Бонус",value:null}
   ];
   var PENALTY = -50;
   var PIP = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
@@ -358,7 +358,9 @@
         '</div></div>'+
         '<div class="names">'+rows+'</div>'+
         '<button class="btn btn-primary" style="margin-top:24px" data-act="start">Почати гру <span>→</span></button>'+
-      '</div></div></div>';
+      '</div>'+
+      '<button class="link" data-act="install" style="display:block;margin:16px auto 0">📲 Встановити на телефон</button>'+
+    '</div></div>';
   }
 
   function viewGame(){
@@ -370,9 +372,9 @@
     });
     thead+='</tr>';
 
-    var body='<tr class="section"><td colspan="'+(S.players.length+1)+'">Школи</td></tr>';
+    var body='<tr class="section"><td colspan="'+(S.players.length+1)+'">Грані</td></tr>';
     SCHOOLS.forEach(function(s){
-      body+='<tr><td class="cat"><span class="catlbl">'+die(s,"sm")+'<span>Школа '+s+'</span></span></td>';
+      body+='<tr><td class="cat"><span class="catlbl">'+die(s,"sm")+'<span>Грань '+s+'</span></span></td>';
       S.players.forEach(function(p,idx){
         body+=cellHtml(p.schools[s],idx,"school",s,function(rec){
           return '<span class="score '+scoreClass(rec.score)+'">'+signed(rec.score)+'</span>';
@@ -430,7 +432,7 @@
             '<span class="name">'+esc(p.name)+(win?' <span>👑</span>':'')+'</span></div>'+
           '<span class="total">'+totalScore(p)+'</span>'+
         '</div>'+
-        '<div class="brk"><span>Школи: <span class="num">'+schoolTxt+'</span></span>'+
+        '<div class="brk"><span>Грані: <span class="num">'+schoolTxt+'</span></span>'+
           '<span>Комбінації: <span class="num">'+combosTotal(p)+'</span></span></div>'+
       '</div>';
     });
@@ -450,6 +452,7 @@
     if(!S.overlay)return "";
     var inner="";
     if(S.overlay.kind==="rules")inner=rulesModal();
+    else if(S.overlay.kind==="install")inner=installModal();
     else if(S.overlay.kind==="confirm")inner=confirmModal(S.overlay.cfg);
     else if(S.overlay.kind==="picker")inner=pickerModal(S.overlay.cell);
     return '<div class="overlay" data-act="overlay-close"><div class="center">'+
@@ -458,7 +461,7 @@
 
   function pickerModal(cell){
     var name=esc(S.players[cell.playerIdx].name);
-    var title = cell.kind==="school" ? ("Школа "+cell.key)
+    var title = cell.kind==="school" ? ("Грань "+cell.key)
       : esc(COMBOS.filter(function(c){return c.key===cell.key;})[0].label);
     var head='<div class="mhead"><div><p class="sub">'+name+'</p><h3>'+title+'</h3></div>'+
       '<button class="x" data-act="close" aria-label="Закрити">✕</button></div>';
@@ -511,13 +514,23 @@
       '</div>';
   }
 
+  function installModal(){
+    return '<div class="mhead"><h3>Встановити як додаток</h3><button class="x" data-act="close" aria-label="Закрити">✕</button></div>'+
+      '<div class="rules desc">'+
+      '<p>Гра працює як PWA — встановіть її на головний екран і запускайте як звичайний додаток, без браузера та адресного рядка. Версія оновлюється автоматично при наступному запуску.</p>'+
+      '<p><span class="tag">Android (Chrome)</span><br>Натисніть меню <strong>⋮</strong> у правому верхньому куті → <strong>«Додати на головний екран»</strong> або <strong>«Встановити додаток»</strong> → підтвердіть.</p>'+
+      '<p style="margin-bottom:0"><span class="tag">iOS (Safari)</span><br>Натисніть кнопку <strong>«Поділитися»</strong> (□↑) внизу екрана → прокрутіть і оберіть <strong>«На початковий екран»</strong> → натисніть <strong>«Додати»</strong>.</p>'+
+      '</div>'+
+      '<button class="btn btn-primary" style="margin-top:20px" data-act="close">Зрозуміло</button>';
+  }
+
   function rulesModal(){
     return '<div class="mhead"><h3>Як грати</h3><button class="x" data-act="close" aria-label="Закрити">✕</button></div>'+
       '<div class="rules desc">'+
       '<p>Гравці ходять по черзі. У реальному житті кидаєте 5 кубиків і вносите результат у бланк. За хід заповнюється рівно одна вільна клітинка.</p>'+
-      '<p><span class="tag">Школи (1–6).</span> Бали = (кількість кубиків з потрібним числом − 3) × номінал. Три кубики — це нуль. У кінці гри, якщо сума по школах від’ємна, до неї додається штраф −50.</p>'+
+      '<p><span class="tag">Грані (1–6).</span> Бали = (кількість кубиків з потрібним числом − 3) × номінал. Три кубики — це нуль. У кінці гри, якщо сума по гранях від’ємна, до неї додається штраф −50.</p>'+
       '<p><span class="tag">Комбінації.</span> Зібрали з першого кидка — закриваєте ×2. З другого чи третього — звичайні бали. Не вдалося — викреслюєте (0, цієї гри більше недоступна).</p>'+
-      '<p class="combos">Пара 5 · Дві пари 10 · Трикутник 15 · Малий стріт 20 · Великий стріт 30 · Фулхаус 35 · Каре 40 · Покер 50 · Шанс = сума граней (5–30)</p>'+
+      '<p class="combos">Пара 5 · Дві пари 10 · Трикутник 15 · Малий ряд 20 · Великий ряд 30 · Фулхаус 35 · Каре 40 · Покер 50 · Бонус = сума граней (5–30)</p>'+
       '<p style="margin-bottom:0">Коли всі заповнять усі клітинки — рахуємо переможця.</p>'+
       '</div>'+
       '<button class="btn btn-primary" style="margin-top:20px" data-act="close">Закрити</button>';
@@ -535,6 +548,7 @@
       case "open": openCell(parseInt(el.dataset.p,10),el.dataset.kind,el.dataset.kind==="school"?parseInt(el.dataset.key,10):el.dataset.key); break;
       case "undo": undoLast(); break;
       case "rules": S.overlay={kind:"rules"}; render(); break;
+      case "install": S.overlay={kind:"install"}; render(); break;
       case "fullscreen": toggleFullscreen(); break;
       case "close": case "overlay-close": S.overlay=null; S.chanceErr=false; render(); break;
       case "noop": break;
