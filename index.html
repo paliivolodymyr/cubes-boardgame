@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Кубики</title>
+<meta name="theme-color" content="#065f46" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="description" content="Покрокова гра в кубики на 1–8 гравців. Працює офлайн." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>" />
+<style>
+  :root{
+    --felt-top:#047857; --felt-bot:#022c22;
+    --cream:#fafaf9; --paper:#ffffff;
+    --em950:#022c22; --em900:#064e3b; --em800:#065f46; --em700:#047857; --em600:#059669; --em100:#d1fae5; --em50:#ecfdf5;
+    --amber500:#f59e0b; --amber400:#fbbf24; --amber300:#fcd34d; --amber100:#fef3c7; --amber50:#fffbeb;
+    --rose600:#e11d48; --rose400:#fb7185; --rose200:#fecdd3; --rose50:#fff1f2;
+    --st300:#d6d3d1; --st200:#e7e5e4; --st100:#f5f5f4; --st400:#a8a29e; --st500:#78716c;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--em950);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(to bottom,var(--felt-top),var(--felt-bot));
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .app{min-height:100%;padding:24px 16px}
+  .wrap{margin:0 auto;width:100%}
+  .wrap.md{max-width:28rem}.wrap.lg{max-width:32rem}.wrap.xl{max-width:64rem}
+
+  /* ---- header / titles ---- */
+  .head{position:relative;text-align:center;color:var(--cream);margin-bottom:24px}
+  .head h1{margin:8px 0 0;font-size:30px;letter-spacing:-.02em}
+  .head .title-row{display:flex;align-items:center;justify-content:center;gap:8px}
+  .link{background:none;border:none;color:#d6d3d1;font-size:14px;cursor:pointer;text-underline-offset:4px;margin-top:8px}
+  .link:hover{text-decoration:underline}
+
+  /* ---- cards ---- */
+  .card{background:var(--cream);border-radius:24px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+  .card h2{margin:0;font-size:18px;letter-spacing:-.01em}
+  .row{display:flex;align-items:center;gap:8px}
+  .between{display:flex;align-items:center;justify-content:space-between}
+
+  /* ---- buttons ---- */
+  button{font-family:inherit}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:16px;padding:14px;font-weight:600;font-size:16px;cursor:pointer;transition:.15s}
+  .btn:active{transform:scale(.99)}
+  .btn-primary{background:var(--em700);color:var(--cream)}
+  .btn-primary:hover{background:var(--em600)}
+  .btn-dark{background:rgba(2,44,34,.4);color:var(--cream);box-shadow:inset 0 0 0 1px rgba(250,250,249,.2)}
+  .btn-dark:hover{background:rgba(2,44,34,.6)}
+  .btn-danger{background:var(--rose600);color:var(--cream)}
+  .btn-danger:hover{background:#f43f5e}
+  .btn-outline{background:var(--paper);color:#44403c;box-shadow:inset 0 0 0 1px var(--st300)}
+  .btn-outline:hover{background:var(--st100)}
+  .pill{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;background:var(--em900);color:var(--cream);font-size:14px;font-weight:500;padding:8px 12px;cursor:pointer;transition:.15s}
+  .pill:hover{background:var(--em800)}
+  .pill:disabled{opacity:.4;cursor:not-allowed}
+  .iconbtn{display:grid;place-items:center;width:36px;height:36px;border:none;border-radius:999px;background:var(--em900);color:var(--cream);font-size:18px;cursor:pointer;transition:.15s}
+  .iconbtn:hover{background:var(--em800)}
+
+  /* ---- stepper ---- */
+  .stepper{display:flex;align-items:center;justify-content:space-between;background:var(--em900);color:var(--cream);border-radius:16px;padding:12px 16px;margin:24px 0}
+  .stepper .lbl{font-size:14px;font-weight:500}
+  .stepper .ctrls{display:flex;align-items:center;gap:12px}
+  .stepbtn{display:grid;place-items:center;width:32px;height:32px;border:none;border-radius:999px;font-size:18px;font-weight:700;cursor:pointer}
+  .stepbtn.minus{background:var(--em700);color:var(--cream)}
+  .stepbtn.minus:hover{background:var(--em600)}
+  .stepbtn.plus{background:var(--amber500);color:var(--em950)}
+  .stepbtn.plus:hover{background:var(--amber400)}
+  .stepbtn:disabled{opacity:.4;cursor:not-allowed}
+  .count{width:24px;text-align:center;font-size:20px}
+
+  /* ---- name inputs ---- */
+  .names{display:flex;flex-direction:column;gap:8px}
+  .nrow{display:flex;align-items:center;gap:12px}
+  .badge{display:grid;place-items:center;flex:0 0 auto;width:36px;height:36px;border-radius:999px;background:var(--amber500);color:var(--em950);font-size:14px;font-weight:700}
+  input.name,input.chance{width:100%;border:1px solid var(--st300);border-radius:12px;background:var(--paper);color:var(--em950);padding:8px 12px;font-size:16px;outline:none;transition:.15s}
+  input.name:focus,input.chance:focus{border-color:var(--em600);box-shadow:0 0 0 3px rgba(5,150,105,.25)}
+  input.chance{text-align:center;font-family:var(--mono);font-size:18px}
+
+  /* ---- banner ---- */
+  .banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--cream);border-radius:16px;padding:12px 16px;margin-bottom:16px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .banner .who .k{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--st400)}
+  .banner .who .n{font-size:18px;font-weight:700;line-height:1.1;color:var(--em950)}
+  .banner .tools{display:flex;align-items:center;gap:8px}
+  .hint{text-align:center;color:#e7e5e4;font-size:14px;margin:0 0 12px}
+  .pulse{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+  /* ---- sheet ---- */
+  .scroll{overflow-x:auto;background:var(--cream);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+  table.sheet{border-collapse:collapse;width:100%;font-size:14px}
+  .sheet th,.sheet td{padding:6px 8px}
+  .sheet .cat{position:sticky;left:0;z-index:2;text-align:left}
+  .sheet thead .cat{background:var(--em900);color:var(--cream);font-weight:600;padding:8px 12px}
+  .sheet tbody .cat{background:var(--cream)}
+  .sheet th.pcol{min-width:88px;text-align:center;background:var(--em900);color:var(--cream);font-weight:600}
+  .sheet th.pcol.turn{background:var(--amber500);color:var(--em950)}
+  .sheet th.pcol .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:88px}
+  .sheet th.pcol .pr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10px;font-weight:400;opacity:.7}
+  .sheet tbody tr{border-bottom:1px solid var(--st200)}
+  .sheet td.body{border-left:1px solid var(--st200);text-align:center}
+  .sheet td.cat .catlbl{display:flex;align-items:center;gap:8px;font-weight:500;color:var(--em950)}
+  .sheet td.cat .combo{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .sheet td.cat .pts{font-family:var(--mono);font-size:12px;color:var(--st400)}
+  .section td{position:sticky;left:0;background:var(--em100);color:var(--em800);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px}
+  .cellbtn{display:grid;place-items:center;margin:0 auto;width:28px;height:28px;border:1px solid var(--amber300);border-radius:8px;background:var(--amber100);color:#b45309;font-size:16px;cursor:pointer;transition:.15s}
+  .cellbtn:hover{background:#fde68a}
+  .cellbtn:active{transform:scale(.95)}
+  .dot{color:var(--st300)}
+  .score{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+  .pos{color:var(--em700)}.neg{color:var(--rose600)}.zero{color:var(--st500)}
+  .combo-val{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;color:var(--em800)}
+  .x2{border-radius:4px;background:var(--amber400);color:var(--em950);font-size:10px;font-weight:700;padding:0 4px}
+  .cross{color:var(--rose400);font-weight:700}
+  .endlink{display:block;margin:16px auto 0;background:none;border:none;color:#d6d3d1;font-size:14px;cursor:pointer;text-underline-offset:4px}
+  .endlink:hover{text-decoration:underline}
+
+  /* ---- die ---- */
+  .die{display:inline-grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1px;border-radius:6px;background:var(--st100);border:1px solid var(--st300);box-shadow:0 1px 2px rgba(0,0,0,.1);vertical-align:middle}
+  .die.sm{width:20px;height:20px;padding:2px}
+  .die.md{width:28px;height:28px;padding:4px}
+  .die.lg{width:40px;height:40px;padding:6px}
+  .die.amber{background:var(--em700);border-color:#10b981}
+  .pip{border-radius:50%;background:transparent}
+  .die.ink .pip.on{background:var(--em950)}
+  .die.amber .pip.on{background:var(--amber500)}
+
+  /* ---- overlay / modal ---- */
+  .overlay{position:fixed;inset:0;z-index:50;overflow-y:auto;background:rgba(0,0,0,.5)}
+  .overlay .center{display:flex;min-height:100%;align-items:center;justify-content:center;padding:16px}
+  .modal{width:100%;max-width:28rem;background:var(--cream);border-radius:24px;padding:20px;box-shadow:0 24px 50px rgba(0,0,0,.35)}
+  .modal h3{margin:0;font-size:20px;color:var(--em950)}
+  .modal .sub{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--st400)}
+  .modal .x{border:none;background:none;color:var(--st400);font-size:20px;line-height:1;cursor:pointer;border-radius:999px;padding:4px}
+  .modal .x:hover{background:var(--st100)}
+  .mhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+  .desc{font-size:14px;line-height:1.6;color:#57534e}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .sbtn{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--st200);border-radius:12px;background:var(--paper);padding:12px 0;cursor:pointer;transition:.15s}
+  .sbtn:hover{border-color:var(--em600);background:var(--em50)}
+  .sbtn:active{transform:scale(.95)}
+  .sbtn .cnt{font-size:11px;color:var(--st400)}
+  .sbtn .sc{font-family:var(--mono);font-weight:700;font-size:14px}
+  .pickbtn{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;border-radius:12px;border:1px solid;padding:12px 16px;cursor:pointer;transition:.15s;margin-top:8px}
+  .pickbtn:active{transform:scale(.99)}
+  .pickbtn:disabled{opacity:.4;cursor:not-allowed}
+  .pickbtn .t{font-weight:600;display:block}
+  .pickbtn .s{font-size:12px;opacity:.7;display:block}
+  .pickbtn .r{font-family:var(--mono);font-weight:700;font-size:18px}
+  .pick-amber{border-color:var(--amber300);background:var(--amber50);color:#78350f}
+  .pick-amber:hover{background:var(--amber100)}
+  .pick-emerald{border-color:#6ee7b7;background:var(--em50);color:#064e3b}
+  .pick-emerald:hover{background:var(--em100)}
+  .pick-rose{border-color:var(--rose200);background:var(--rose50);color:#9f1239}
+  .pick-rose:hover{background:#ffe4e6}
+  .err{color:var(--rose600);font-size:13px;margin:8px 0 0}
+  .modal .field-lbl{display:block;font-size:14px;color:var(--st500);margin-bottom:4px}
+  .rules p{margin:0 0 12px}
+  .rules .tag{font-weight:600;color:var(--em900)}
+  .rules .combos{background:var(--st100);border-radius:12px;padding:12px;font-family:var(--mono);font-size:12px;line-height:1.6}
+  .mbtns{display:flex;gap:12px;margin-top:20px}
+  .mbtns .btn{margin:0}
+
+  /* ---- results ---- */
+  .res-head{text-align:center;color:var(--cream);margin-bottom:24px}
+  .res-head .tr{font-size:40px}
+  .res-head h1{margin:8px 0 0;font-size:30px;letter-spacing:-.02em}
+  .reslist{display:flex;flex-direction:column;gap:12px}
+  .resrow{background:var(--cream);border-radius:16px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,.18);box-shadow:0 10px 24px rgba(0,0,0,.18),inset 0 0 0 1px rgba(0,0,0,.05)}
+  .resrow.win{background:var(--amber50);box-shadow:0 10px 24px rgba(0,0,0,.18),inset 0 0 0 1px var(--amber400)}
+  .resrow .rank{display:grid;place-items:center;width:32px;height:32px;border-radius:999px;background:var(--em900);color:var(--cream);font-family:var(--mono);font-weight:700;font-size:14px}
+  .resrow.win .rank{background:var(--amber500);color:var(--em950)}
+  .resrow .name{display:flex;align-items:center;gap:6px;font-size:18px;font-weight:600;color:var(--em950)}
+  .resrow .total{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700;font-size:24px;color:var(--em900)}
+  .resrow .brk{display:flex;flex-wrap:wrap;gap:4px 16px;padding-left:44px;margin-top:8px;font-size:14px;color:var(--st500)}
+  .resrow .brk .num{font-size:13px}
+  .res-actions{display:flex;gap:12px;margin-top:24px}
+  .res-actions .btn{margin:0}
+  .undo-res{display:flex;align-items:center;justify-content:center;gap:6px;margin:16px auto 0;background:none;border:none;color:#d6d3d1;font-size:14px;cursor:pointer;text-underline-offset:4px}
+  .undo-res:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ----------------------------- дані ----------------------------- */
+  var SCHOOLS = [1,2,3,4,5,6];
+  var COMBOS = [
+    {key:"pair",label:"Пара",value:5},
+    {key:"two_pairs",label:"Дві пари",value:10},
+    {key:"triple",label:"Трикутник",value:15},
+    {key:"small_straight",label:"Малий стріт",value:20},
+    {key:"big_straight",label:"Великий стріт",value:30},
+    {key:"full_house",label:"Фулхаус",value:35},
+    {key:"care",label:"Каре",value:40},
+    {key:"poker",label:"Покер",value:50},
+    {key:"chance",label:"Шанс",value:null}
+  ];
+  var PENALTY = -50;
+  var PIP = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+
+  /* ----------------------------- стан ----------------------------- */
+  var S = {
+    phase:"setup",
+    playerCount:2,
+    names:["Гравець 1","Гравець 2","Гравець 3","Гравець 4","Гравець 5","Гравець 6","Гравець 7","Гравець 8"],
+    players:[],
+    turn:0,
+    history:[],
+    overlay:null,        // null | {kind:'rules'} | {kind:'picker',cell} | {kind:'confirm',cfg}
+    chanceVal:"",
+    chanceErr:false
+  };
+
+  /* --------------------------- утиліти ---------------------------- */
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+  function signed(n){return n>0?("+"+n):(""+n);}
+  function schoolScore(v,c){return (c-3)*v;}
+  function schoolsRaw(p){return SCHOOLS.reduce(function(a,s){var r=p.schools[s];return a+(r?r.score:0);},0);}
+  function schoolsFinal(p){var r=schoolsRaw(p);return r<0?r+PENALTY:r;}
+  function combosTotal(p){return COMBOS.reduce(function(a,c){var r=p.combos[c.key];return a+(r?r.score:0);},0);}
+  function totalScore(p){return schoolsFinal(p)+combosTotal(p);}
+  function isComplete(p){
+    return SCHOOLS.every(function(s){return p.schools[s]!=null;}) &&
+           COMBOS.every(function(c){return p.combos[c.key]!=null;});
+  }
+  function filledCount(p){
+    var n=0;
+    SCHOOLS.forEach(function(s){if(p.schools[s]!=null)n++;});
+    COMBOS.forEach(function(c){if(p.combos[c.key]!=null)n++;});
+    return n;
+  }
+  function scoreClass(n){return n>0?"pos":(n<0?"neg":"zero");}
+
+  function die(n,size,tone){
+    var on=PIP[n]||[],cells="";
+    for(var i=0;i<9;i++){cells+='<span class="pip'+(on.indexOf(i)>=0?' on':'')+'"></span>';}
+    return '<span class="die '+(size||'md')+' '+(tone||'ink')+'" aria-hidden="true">'+cells+'</span>';
+  }
+
+  /* --------------------------- дії ---------------------------- */
+  function setCount(n){S.playerCount=Math.max(1,Math.min(8,n));render();}
+
+  function startGame(){
+    S.players=S.names.slice(0,S.playerCount).map(function(n,i){
+      return {id:i,name:(n||"").trim()||("Гравець "+(i+1)),schools:{},combos:{}};
+    });
+    S.turn=0;S.history=[];S.overlay=null;S.phase="playing";render();
+  }
+  function playAgain(){
+    S.players=S.players.map(function(p){return {id:p.id,name:p.name,schools:{},combos:{}};});
+    S.turn=0;S.history=[];S.overlay=null;S.phase="playing";render();
+  }
+  function backToSetup(){S.overlay=null;S.phase="setup";render();}
+
+  function writeCell(idx,kind,key,rec){
+    var p=S.players[idx];
+    if(kind==="school")p.schools[key]=rec; else p.combos[key]=rec;
+    S.history.push({playerIdx:idx,kind:kind,key:key});
+    S.overlay=null;S.chanceVal="";S.chanceErr=false;
+    if(S.players.every(isComplete)){S.phase="results";}
+    else{S.turn=(S.turn+1)%S.players.length;}
+    render();
+  }
+  function undoLast(){
+    if(S.history.length===0)return;
+    var last=S.history.pop();
+    var p=S.players[last.playerIdx];
+    if(last.kind==="school")delete p.schools[last.key]; else delete p.combos[last.key];
+    S.turn=last.playerIdx;S.overlay=null;S.phase="playing";render();
+  }
+  function toggleFullscreen(){
+    try{
+      var d=document,el=d.documentElement;
+      if(!d.fullscreenElement){(el.requestFullscreen||el.webkitRequestFullscreen).call(el);}
+      else{(d.exitFullscreen||d.webkitExitFullscreen).call(d);}
+    }catch(e){}
+  }
+
+  /* picker submit */
+  function pickSchool(count){
+    var c=S.overlay.cell;
+    writeCell(c.playerIdx,"school",c.key,{count:count,score:schoolScore(c.key,count)});
+  }
+  function pickCombo(mode){
+    var c=S.overlay.cell, base, key=c.key;
+    var combo=COMBOS.filter(function(x){return x.key===key;})[0];
+    if(key==="chance"){
+      base=parseInt(S.chanceVal,10);
+      if(isNaN(base)||base<5||base>30){S.chanceErr=true;render();return;}
+    }else{ base=combo.value; }
+    var score = mode==="cross"?0:(mode==="x2"?base*2:base);
+    writeCell(c.playerIdx,"combo",key,{mode:mode,score:score});
+  }
+
+  function openCell(playerIdx,kind,key){
+    if(playerIdx!==S.turn)return;
+    var p=S.players[playerIdx];
+    var filled = kind==="school"?(p.schools[key]!=null):(p.combos[key]!=null);
+    if(filled)return;
+    S.chanceVal="";S.chanceErr=false;
+    S.overlay={kind:"picker",cell:{playerIdx:playerIdx,kind:kind,key:key}};
+    render();
+  }
+
+  function askConfirm(cfg){S.overlay={kind:"confirm",cfg:cfg};render();}
+  function runConfirm(){
+    var cfg=S.overlay&&S.overlay.cfg; S.overlay=null;
+    if(!cfg)return;
+    if(cfg.action==="finish")backToSetup();
+    else if(cfg.action==="replay")playAgain();
+    else if(cfg.action==="newgame")backToSetup();
+    else render();
+  }
+
+  /* --------------------------- рендер ---------------------------- */
+  var app=document.getElementById("app");
+  function render(){app.innerHTML=view();}
+
+  function view(){
+    if(S.phase==="setup")return viewSetup()+overlayView();
+    if(S.phase==="results")return viewResults()+overlayView();
+    return viewGame()+overlayView();
+  }
+
+  function header(){
+    return '<div class="head">'+
+      '<button class="iconbtn" data-act="fullscreen" style="position:absolute;right:0;top:0;background:rgba(6,78,59,.7)" aria-label="На весь екран">⛶</button>'+
+      '<div class="title-row">'+die(5,"lg","amber")+'<h1>Кубики</h1></div>'+
+      '<button class="link" data-act="rules">Як грати</button>'+
+    '</div>';
+  }
+
+  function viewSetup(){
+    var rows="";
+    for(var i=0;i<S.playerCount;i++){
+      rows+='<div class="nrow"><span class="badge">'+(i+1)+'</span>'+
+        '<input class="name" data-i="'+i+'" maxlength="16" value="'+esc(S.names[i])+'" placeholder="Гравець '+(i+1)+'"></div>';
+    }
+    return '<div class="app"><div class="wrap md">'+header()+
+      '<div class="card">'+
+        '<div class="row" style="margin-bottom:24px;color:var(--em900)"><span style="font-size:18px">👥</span><h2>Гравці</h2></div>'+
+        '<div class="stepper"><span class="lbl">Кількість гравців</span><div class="ctrls">'+
+          '<button class="stepbtn minus" data-act="dec" '+(S.playerCount<=1?'disabled':'')+' aria-label="Менше">−</button>'+
+          '<span class="count num">'+S.playerCount+'</span>'+
+          '<button class="stepbtn plus" data-act="inc" '+(S.playerCount>=8?'disabled':'')+' aria-label="Більше">+</button>'+
+        '</div></div>'+
+        '<div class="names">'+rows+'</div>'+
+        '<button class="btn btn-primary" style="margin-top:24px" data-act="start">Почати гру <span>→</span></button>'+
+      '</div></div></div>';
+  }
+
+  function viewGame(){
+    var cur=S.players[S.turn];
+    var thead='<tr><th class="cat">Категорія</th>';
+    S.players.forEach(function(p,idx){
+      thead+='<th class="pcol'+(idx===S.turn?' turn':'')+'"><div class="nm">'+esc(p.name)+'</div>'+
+             '<div class="pr">'+filledCount(p)+'/15</div></th>';
+    });
+    thead+='</tr>';
+
+    var body='<tr class="section"><td colspan="'+(S.players.length+1)+'">Школи</td></tr>';
+    SCHOOLS.forEach(function(s){
+      body+='<tr><td class="cat"><span class="catlbl">'+die(s,"sm")+'<span>Школа '+s+'</span></span></td>';
+      S.players.forEach(function(p,idx){
+        body+=cellHtml(p.schools[s],idx,"school",s,function(rec){
+          return '<span class="score '+scoreClass(rec.score)+'">'+signed(rec.score)+'</span>';
+        });
+      });
+      body+='</tr>';
+    });
+    body+='<tr class="section"><td colspan="'+(S.players.length+1)+'">Комбінації</td></tr>';
+    COMBOS.forEach(function(c){
+      var pts=c.value!=null?c.value:"5–30";
+      body+='<tr><td class="cat"><span class="combo"><span style="font-weight:500;color:var(--em950)">'+c.label+'</span><span class="pts">'+pts+'</span></span></td>';
+      S.players.forEach(function(p,idx){
+        body+=cellHtml(p.combos[c.key],idx,"combo",c.key,function(rec){
+          if(rec.mode==="cross")return '<span class="cross">✗</span>';
+          return '<span class="combo-val">'+rec.score+(rec.mode==="x2"?'<span class="x2">×2</span>':'')+'</span>';
+        });
+      });
+      body+='</tr>';
+    });
+
+    return '<div class="app"><div class="wrap xl">'+
+      '<div class="banner">'+
+        '<div class="row"><span class="pulse">'+die(5,"lg","amber")+'</span>'+
+          '<div class="who"><div class="k">Хід гравця</div><div class="n">'+esc(cur?cur.name:"")+'</div></div></div>'+
+        '<div class="tools">'+
+          '<button class="pill" data-act="undo" '+(S.history.length===0?'disabled':'')+'>↶ Скасувати</button>'+
+          '<button class="iconbtn" data-act="rules" aria-label="Правила" style="font-weight:700">?</button>'+
+          '<button class="iconbtn" data-act="fullscreen" aria-label="На весь екран">⛶</button>'+
+        '</div>'+
+      '</div>'+
+      '<p class="hint">Оберіть одну вільну клітинку у своєму стовпці, щоб записати кидок.</p>'+
+      '<div class="scroll"><table class="sheet"><thead>'+thead+'</thead><tbody>'+body+'</tbody></table></div>'+
+      '<button class="endlink" data-act="finish">Завершити й почати спочатку</button>'+
+    '</div></div>';
+  }
+
+  function cellHtml(rec,idx,kind,key,renderFn){
+    if(rec!=null){return '<td class="body">'+renderFn(rec)+'</td>';}
+    if(idx===S.turn){
+      return '<td class="body"><button class="cellbtn" data-act="open" data-p="'+idx+'" data-kind="'+kind+'" data-key="'+key+'" aria-label="Записати">+</button></td>';
+    }
+    return '<td class="body"><span class="dot">·</span></td>';
+  }
+
+  function viewResults(){
+    var ranked=S.players.slice().sort(function(a,b){return totalScore(b)-totalScore(a);});
+    var best=ranked.length?totalScore(ranked[0]):0;
+    var list="";
+    ranked.forEach(function(p,i){
+      var raw=schoolsRaw(p),sFinal=schoolsFinal(p),pen=raw<0,win=totalScore(p)===best;
+      var schoolTxt=pen?(sFinal+" ("+signed(raw)+" штраф −50)"):signed(raw);
+      list+='<div class="resrow'+(win?' win':'')+'">'+
+        '<div class="between">'+
+          '<div class="row"><span class="rank">'+(i+1)+'</span>'+
+            '<span class="name">'+esc(p.name)+(win?' <span>👑</span>':'')+'</span></div>'+
+          '<span class="total">'+totalScore(p)+'</span>'+
+        '</div>'+
+        '<div class="brk"><span>Школи: <span class="num">'+schoolTxt+'</span></span>'+
+          '<span>Комбінації: <span class="num">'+combosTotal(p)+'</span></span></div>'+
+      '</div>';
+    });
+    var undo=S.history.length>0?'<button class="undo-res" data-act="undo">↶ Скасувати останній хід і повернутися до гри</button>':"";
+    return '<div class="app"><div class="wrap lg">'+
+      '<div class="res-head"><div class="tr">🏆</div><h1>Підсумок гри</h1></div>'+
+      '<div class="reslist">'+list+'</div>'+
+      '<div class="res-actions">'+
+        '<button class="btn btn-primary" data-act="replay">↺ Зіграти ще</button>'+
+        '<button class="btn btn-dark" data-act="newgame">Нова гра</button>'+
+      '</div>'+undo+
+    '</div></div>';
+  }
+
+  /* --------------------------- overlay ---------------------------- */
+  function overlayView(){
+    if(!S.overlay)return "";
+    var inner="";
+    if(S.overlay.kind==="rules")inner=rulesModal();
+    else if(S.overlay.kind==="confirm")inner=confirmModal(S.overlay.cfg);
+    else if(S.overlay.kind==="picker")inner=pickerModal(S.overlay.cell);
+    return '<div class="overlay" data-act="overlay-close"><div class="center">'+
+      '<div class="modal" data-act="noop">'+inner+'</div></div></div>';
+  }
+
+  function pickerModal(cell){
+    var name=esc(S.players[cell.playerIdx].name);
+    var title = cell.kind==="school" ? ("Школа "+cell.key)
+      : esc(COMBOS.filter(function(c){return c.key===cell.key;})[0].label);
+    var head='<div class="mhead"><div><p class="sub">'+name+'</p><h3>'+title+'</h3></div>'+
+      '<button class="x" data-act="close" aria-label="Закрити">✕</button></div>';
+    if(cell.kind==="school")return head+schoolPicker(cell.key);
+    if(cell.key==="chance")return head+chancePicker();
+    return head+comboPicker(COMBOS.filter(function(c){return c.key===cell.key;})[0].value);
+  }
+
+  function schoolPicker(value){
+    var btns="";
+    [1,2,3,4,5].forEach(function(count){
+      var sc=schoolScore(value,count);
+      btns+='<button class="sbtn" data-act="school-pick" data-count="'+count+'">'+
+        die(value,"sm")+'<span class="cnt">×'+count+'</span>'+
+        '<span class="sc '+scoreClass(sc)+'">'+signed(sc)+'</span></button>';
+    });
+    return '<p class="desc" style="margin-bottom:12px">Скільки кубиків зі значенням '+value+' випало? Потрібно три, щоб закрити в нуль.</p>'+
+           '<div class="grid5">'+btns+'</div>';
+  }
+
+  function comboPicker(value){
+    return pickBtn("amber","x2","Закрити ×2","Випало з першого кидка",value*2,false)+
+           pickBtn("emerald","plain","Закрити","Випало з 2-го чи 3-го кидка",value,false)+
+           pickBtn("rose","cross","Викреслити","Не вдалося зібрати",0,false);
+  }
+
+  function chancePicker(){
+    var n=parseInt(S.chanceVal,10);
+    var valid=!isNaN(n)&&n>=5&&n<=30;
+    var err=S.chanceErr?'<p class="err">Введіть суму від 5 до 30.</p>':"";
+    return '<label class="field-lbl">Сума всіх граней (5–30)</label>'+
+      '<input class="chance" type="number" inputmode="numeric" min="5" max="30" value="'+esc(S.chanceVal)+'" placeholder="напр. 22">'+err+
+      pickBtn("amber","x2","Закрити ×2","Випало з першого кидка",valid?n*2:"—",false)+
+      pickBtn("emerald","plain","Закрити","Випало з 2-го чи 3-го кидка",valid?n:"—",false)+
+      pickBtn("rose","cross","Викреслити","Не вдалося зібрати",0,false);
+  }
+
+  function pickBtn(tone,mode,title,sub,right,disabled){
+    return '<button class="pickbtn pick-'+tone+'" data-act="combo-pick" data-mode="'+mode+'"'+(disabled?' disabled':'')+'>'+
+      '<span><span class="t">'+title+'</span><span class="s">'+sub+'</span></span>'+
+      '<span class="r">'+right+'</span></button>';
+  }
+
+  function confirmModal(cfg){
+    return '<h3>'+esc(cfg.title)+'</h3>'+
+      (cfg.message?'<p class="desc" style="margin-top:8px">'+esc(cfg.message)+'</p>':"")+
+      '<div class="mbtns">'+
+        '<button class="btn btn-outline" data-act="close">Скасувати</button>'+
+        '<button class="btn btn-danger" data-act="confirm-yes">'+esc(cfg.confirmLabel||"Так")+'</button>'+
+      '</div>';
+  }
+
+  function rulesModal(){
+    return '<div class="mhead"><h3>Як грати</h3><button class="x" data-act="close" aria-label="Закрити">✕</button></div>'+
+      '<div class="rules desc">'+
+      '<p>Гравці ходять по черзі. У реальному житті кидаєте 5 кубиків і вносите результат у бланк. За хід заповнюється рівно одна вільна клітинка.</p>'+
+      '<p><span class="tag">Школи (1–6).</span> Бали = (кількість кубиків з потрібним числом − 3) × номінал. Три кубики — це нуль. У кінці гри, якщо сума по школах від’ємна, до неї додається штраф −50.</p>'+
+      '<p><span class="tag">Комбінації.</span> Зібрали з першого кидка — закриваєте ×2. З другого чи третього — звичайні бали. Не вдалося — викреслюєте (0, цієї гри більше недоступна).</p>'+
+      '<p class="combos">Пара 5 · Дві пари 10 · Трикутник 15 · Малий стріт 20 · Великий стріт 30 · Фулхаус 35 · Каре 40 · Покер 50 · Шанс = сума граней (5–30)</p>'+
+      '<p style="margin-bottom:0">Коли всі заповнять усі клітинки — рахуємо переможця.</p>'+
+      '</div>'+
+      '<button class="btn btn-primary" style="margin-top:20px" data-act="close">Закрити</button>';
+  }
+
+  /* --------------------------- події ---------------------------- */
+  document.addEventListener("click",function(e){
+    var el=e.target.closest("[data-act]");
+    if(!el)return;
+    var a=el.getAttribute("data-act");
+    switch(a){
+      case "dec": setCount(S.playerCount-1); break;
+      case "inc": setCount(S.playerCount+1); break;
+      case "start": startGame(); break;
+      case "open": openCell(parseInt(el.dataset.p,10),el.dataset.kind,el.dataset.kind==="school"?parseInt(el.dataset.key,10):el.dataset.key); break;
+      case "undo": undoLast(); break;
+      case "rules": S.overlay={kind:"rules"}; render(); break;
+      case "fullscreen": toggleFullscreen(); break;
+      case "close": case "overlay-close": S.overlay=null; S.chanceErr=false; render(); break;
+      case "noop": break;
+      case "school-pick": pickSchool(parseInt(el.dataset.count,10)); break;
+      case "combo-pick": pickCombo(el.dataset.mode); break;
+      case "confirm-yes": runConfirm(); break;
+      case "finish": askConfirm({title:"Завершити гру?",message:"Поточний прогрес буде втрачено, і ви повернетеся до налаштувань.",confirmLabel:"Завершити",action:"finish"}); break;
+      case "replay": askConfirm({title:"Зіграти ще раз?",message:"Поточні результати зникнуть, бланк очиститься для тих самих гравців.",confirmLabel:"Грати",action:"replay"}); break;
+      case "newgame": askConfirm({title:"Нова гра?",message:"Поточні результати зникнуть, повернетеся до налаштувань.",confirmLabel:"Нова гра",action:"newgame"}); break;
+    }
+  });
+
+  /* інпути: оновлюють стан без повного перерендеру (щоб не втрачати фокус) */
+  document.addEventListener("input",function(e){
+    var t=e.target;
+    if(t.classList.contains("name")){
+      S.names[parseInt(t.dataset.i,10)]=t.value;
+    }else if(t.classList.contains("chance")){
+      S.chanceVal=t.value;
+    }
+  });
+
+  render();
+})();
+</script>
+<script>
+  // Реєстрація service worker для офлайн-роботи (працює лише на https / хостингу, не з file://)
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
