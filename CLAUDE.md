@@ -30,7 +30,14 @@ is the `VERSION` constant in `sw.js`**. On every change that ships to users:
    Skipping this is the #1 cause of "the website updated but the PWA didn't."
 3. **Update `CHANGELOG.md`**: add a new `## [x.y.z] — YYYY-MM-DD` section at the
    top with `Added` / `Changed` / `Fixed` / `Removed` subsections as relevant.
-   Keep the newest version first.
+   Keep the newest version first, and add the matching link at the bottom.
+4. **Update `README.md`** when behaviour or features change in a user-visible way
+   (new abilities, changed rules, new structure). Docs must reflect the code.
+
+**Never ship a code change without updating the docs.** Every PR that touches
+`index.html` / `sw.js` should bump `VERSION` and update `CHANGELOG.md` (and
+`README.md` when user-facing). Treat missing changelog/version as an incomplete
+change — check this before committing.
 
 Keep the `VERSION` in `sw.js` and the latest `CHANGELOG.md` entry in sync.
 

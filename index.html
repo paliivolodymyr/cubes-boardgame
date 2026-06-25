@@ -41,6 +41,13 @@
   .link{background:none;border:none;color:#d6d3d1;font-size:14px;cursor:pointer;text-underline-offset:4px;margin-top:8px}
   .link:hover{text-decoration:underline}
 
+  /* ---- resume banner ---- */
+  .resume-banner{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--cream);border-radius:16px;padding:12px 44px 12px 12px;margin-bottom:16px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .resume-banner .btn{flex:1;min-width:180px;margin:0}
+  .resume-x{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:28px;height:28px;border:none;border-radius:999px;background:var(--st100);color:var(--st500);font-size:14px;cursor:pointer;transition:.15s}
+  .resume-x:hover{background:var(--st200)}
+  .resume-meta{flex-basis:100%;font-size:13px;color:var(--st500)}
+
   /* ---- cards ---- */
   .card{background:var(--cream);border-radius:24px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
   .card h2{margin:0;font-size:18px;letter-spacing:-.01em}
@@ -224,6 +231,29 @@
     chanceErr:false
   };
 
+  /* --------------------------- збереження ---------------------------- */
+  var STORAGE_KEY="cubes-save-v1";
+  var savedGame=null;   // знімок незавершеної гри для екрана налаштувань
+
+  function saveState(){
+    try{
+      if(S.phase==="setup"){if(!savedGame)clearState();return;}
+      var snap={phase:S.phase,playerCount:S.playerCount,names:S.names,
+        players:S.players,turn:S.turn,history:S.history};
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(snap));
+    }catch(e){}
+  }
+  function loadState(){
+    try{
+      var raw=localStorage.getItem(STORAGE_KEY);
+      if(!raw)return null;
+      var snap=JSON.parse(raw);
+      if(!snap||snap.phase==="setup"||!snap.players||!snap.players.length)return null;
+      return snap;
+    }catch(e){return null;}
+  }
+  function clearState(){try{localStorage.removeItem(STORAGE_KEY);}catch(e){}}
+
   /* --------------------------- утиліти ---------------------------- */
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
   function signed(n){return n>0?("+"+n):(""+n);}
@@ -258,6 +288,17 @@
       return {id:i,name:(n||"").trim()||("Гравець "+(i+1)),schools:{},combos:{}};
     });
     S.turn=0;S.history=[];S.overlay=null;S.phase="playing";render();
+  }
+  function resumeGame(){
+    if(!savedGame)return;
+    S.phase=savedGame.phase;
+    S.playerCount=savedGame.playerCount;
+    S.names=savedGame.names;
+    S.players=savedGame.players;
+    S.turn=savedGame.turn;
+    S.history=savedGame.history;
+    S.overlay=null;S.chanceVal="";S.chanceErr=false;
+    savedGame=null;render();
   }
   function playAgain(){
     S.players=S.players.map(function(p){return {id:p.id,name:p.name,schools:{},combos:{}};});
@@ -327,7 +368,7 @@
 
   /* --------------------------- рендер ---------------------------- */
   var app=document.getElementById("app");
-  function render(){app.innerHTML=view();}
+  function render(){saveState();app.innerHTML=view();}
 
   function view(){
     if(S.phase==="setup")return viewSetup()+overlayView();
@@ -349,7 +390,16 @@
       rows+='<div class="nrow"><span class="badge">'+(i+1)+'</span>'+
         '<input class="name" data-i="'+i+'" maxlength="16" value="'+esc(S.names[i])+'" placeholder="Гравець '+(i+1)+'"></div>';
     }
-    return '<div class="app"><div class="wrap md">'+header()+
+    var resume="";
+    if(savedGame){
+      var done=savedGame.phase==="results";
+      resume='<div class="resume-banner">'+
+        '<button class="btn btn-primary" data-act="resume">▶ Продовжити попередню гру</button>'+
+        '<button class="resume-x" data-act="resume-dismiss" aria-label="Прибрати">✕</button>'+
+        (done?'':'<div class="resume-meta">Хід: '+esc((savedGame.players[savedGame.turn]||{}).name||"")+'</div>')+
+      '</div>';
+    }
+    return '<div class="app"><div class="wrap md">'+header()+resume+
       '<div class="card">'+
         '<div class="row" style="margin-bottom:24px;color:var(--em900)"><span style="font-size:18px">👥</span><h2>Гравці</h2></div>'+
         '<div class="stepper"><span class="lbl">Кількість гравців</span><div class="ctrls">'+
@@ -546,6 +596,8 @@
       case "dec": setCount(S.playerCount-1); break;
       case "inc": setCount(S.playerCount+1); break;
       case "start": startGame(); break;
+      case "resume": resumeGame(); break;
+      case "resume-dismiss": savedGame=null; clearState(); render(); break;
       case "open": openCell(parseInt(el.dataset.p,10),el.dataset.kind,el.dataset.kind==="school"?parseInt(el.dataset.key,10):el.dataset.key); break;
       case "undo": undoLast(); break;
       case "rules": S.overlay={kind:"rules"}; render(); break;
@@ -571,6 +623,16 @@
       S.chanceVal=t.value;
     }
   });
+
+  /* попередження перед оновленням/закриттям сторінки під час гри */
+  window.addEventListener("beforeunload",function(e){
+    if(S.phase==="playing"&&S.history.length>0){
+      e.preventDefault();e.returnValue="";
+    }
+  });
+
+  /* відновлення збереженої гри після перезавантаження */
+  savedGame=loadState();
 
   render();
 })();
