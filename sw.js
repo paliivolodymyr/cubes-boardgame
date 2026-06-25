@@ -1,8 +1,12 @@
 /* Кубики — service worker для офлайн-роботи.
-   Стратегія: cache-first для оболонки застосунку.
+   Стратегія:
+     • навігація (HTML)      → network-first (свіжа версія, кеш як запас офлайн);
+     • статичні ресурси      → cache-first (іконки, маніфест);
+   Кеш версіонований — змінюй VERSION при кожному релізі, щоб скинути старий кеш.
    Усі шляхи відносні, тож працює і в корені домену (Vercel), і в підпапці (GitHub Pages). */
 
-var CACHE = "kubiky-v1";
+var VERSION = "1.0.1";
+var CACHE = "kubiky-" + VERSION;
 var ASSETS = [
   "./",
   "./index.html",
@@ -17,7 +21,8 @@ self.addEventListener("install", function (event) {
       return cache.addAll(ASSETS);
     })
   );
-  self.skipWaiting();
+  // НЕ викликаємо skipWaiting() автоматично — чекаємо на згоду користувача
+  // (повідомлення SKIP_WAITING зі сторінки), щоб не ламати відкриті вкладки.
 });
 
 self.addEventListener("activate", function (event) {
@@ -27,30 +32,52 @@ self.addEventListener("activate", function (event) {
         keys.filter(function (k) { return k !== CACHE; })
             .map(function (k) { return caches.delete(k); })
       );
+    }).then(function () {
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
+});
+
+// Сторінка може попросити новий SW активуватися негайно.
+self.addEventListener("message", function (event) {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", function (event) {
   var req = event.request;
   if (req.method !== "GET") return;
-  event.respondWith(
-    caches.match(req).then(function (cached) {
-      if (cached) return cached;
-      return fetch(req)
+
+  // Навігація → network-first: завжди тягнемо свіжий HTML, офлайн → з кешу.
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
         .then(function (res) {
-          // Кешуємо успішні відповіді того ж походження
-          if (res && res.status === 200 && res.type === "basic") {
-            var copy = res.clone();
-            caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
-          }
+          var copy = res.clone();
+          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
           return res;
         })
         .catch(function () {
-          // Офлайн і нема в кеші → віддаємо головну сторінку для навігації
-          if (req.mode === "navigate") return caches.match("./index.html");
-        });
+          return caches.match(req).then(function (cached) {
+            return cached || caches.match("./index.html");
+          });
+        })
+    );
+    return;
+  }
+
+  // Решта (іконки, маніфест тощо) → cache-first.
+  event.respondWith(
+    caches.match(req).then(function (cached) {
+      if (cached) return cached;
+      return fetch(req).then(function (res) {
+        if (res && res.status === 200 && res.type === "basic") {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+        }
+        return res;
+      });
     })
   );
 });
